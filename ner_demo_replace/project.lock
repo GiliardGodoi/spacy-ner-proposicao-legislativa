@@ -18,26 +18,26 @@ create-config:
     - python scripts/create_config.py pt_core_news_lg ner configs/config.cfg
   deps:
     - path: scripts/create_config.py
-      md5: dc8478cb043c4803dd141565fd34f0f5
+      md5: dcff7b4fe34d9025d7a5bd71740c5730
   outs:
     - path: configs/config.cfg
-      md5: 87c7e4a52892bb88d30650a340562fc2
+      md5: 9baf685e909faaf3e984c2d8f4a86b51
 train:
   cmd: python -m weasel run train
   script:
     - python -m spacy train configs/config.cfg --output training/ --paths.train corpus/train.spacy
       --paths.dev corpus/dev.spacy --training.eval_frequency 10 --training.max_steps
-      1000 --gpu-id -1
+      500 --gpu-id -1
   deps:
     - path: configs/config.cfg
-      md5: 87c7e4a52892bb88d30650a340562fc2
+      md5: 9baf685e909faaf3e984c2d8f4a86b51
     - path: corpus/train.spacy
       md5: 05b973ea9ce50274abe0f8c22763fb76
     - path: corpus/dev.spacy
       md5: 4fa602ea7154f85e10f8af68a4b9b90a
   outs:
     - path: training/model-best
-      md5: be3d736989c33cd285ed278a923c9a52
+      md5: 244d950f5aaf38bd3a8c0a7701d0acd7
 evaluate:
   cmd: python -m weasel run evaluate
   script:
@@ -46,10 +46,10 @@ evaluate:
     - path: corpus/dev.spacy
       md5: 4fa602ea7154f85e10f8af68a4b9b90a
     - path: training/model-best
-      md5: be3d736989c33cd285ed278a923c9a52
+      md5: 244d950f5aaf38bd3a8c0a7701d0acd7
   outs:
     - path: training/metrics.json
-      md5: 67541750330f3bb01190db9478bf1a74
+      md5: e193722c8c9ed81a379aef873ef336bf
 package:
   cmd: python -m weasel run package
   script:

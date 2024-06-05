@@ -4,12 +4,8 @@ from pathlib import Path
 import spacy
 
 
-def create_config(model_name: str, component_to_replace: str, output_path: Path):
+def create_config(model_name: str, component_to_update: str, output_path: Path):
     nlp = spacy.load(model_name)
-
-    # replace the component with a new default component
-    nlp.remove_pipe(component_to_replace)
-    nlp.add_pipe(component_to_replace)
 
     # create a new config as a copy of the loaded pipeline's config
     config = nlp.config.copy()
@@ -17,17 +13,7 @@ def create_config(model_name: str, component_to_replace: str, output_path: Path)
     # revert most training settings to the current defaults
     default_config = spacy.blank(nlp.lang).config
     config["corpora"] = default_config["corpora"]
-    config["training"] = default_config["training"]
-
-    # Some custom values
-    config["training"]['dropout'] = 0.5
-    config['training']['batcher']['size'] = {
-        "@schedules" : "compounding.v1",
-        "start" : 4,
-        "stop" : 32,
-        "compound" : 1.001,
-        "t" : 0
-    }
+    config["training"]["logger"] = default_config["training"]["logger"]
 
     # copy tokenizer and vocab settings from the base model, which includes
     # lookups (lexeme_norm) and vectors, so they don't need to be copied or
@@ -40,13 +26,29 @@ def create_config(model_name: str, component_to_replace: str, output_path: Path)
     config["initialize"]["lookups"] = None
     config["initialize"]["vectors"] = None
 
+    # Some custom values
+    # config["training"]['dropout'] = 0.5
+    # config['training']['batcher']['size'] = {
+    #     "@schedules" : "compounding.v1",
+    #     "start" : 4,
+    #     "stop" : 32,
+    #     "compound" : 1.001,
+    #     "t" : 0
+    # }
+
     # source all components from the loaded pipeline and freeze all except the
-    # component to replace
+    # component to update; replace the listener for the component that is
+    # being updated so that it can be updated independently
     config["training"]["frozen_components"] = []
     for pipe_name in nlp.component_names:
-        if pipe_name != component_to_replace:
+        if pipe_name != component_to_update:
             config["components"][pipe_name] = {"source": model_name}
             config["training"]["frozen_components"].append(pipe_name)
+        else:
+            config["components"][pipe_name] = {
+                "source": model_name,
+                "replace_listeners": ["model.tok2vec"],
+            }
 
     # save the config
     config.to_disk(output_path)
